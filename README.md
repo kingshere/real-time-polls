@@ -1,36 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Real-Time Poll Rooms
 
-## Getting Started
+## Fairness & Anti-Abuse Mechanisms
+To prevent repeat and abusive voting, I implemented two distinct mechanisms:
+1. **Server-Side IP Tracking (Database Level):** When a user votes, their IP address is passed to a Next.js API route. The server attempts to insert a record into a `vote_logs` table containing the `poll_id` and the `ip_address`. The database enforces a `UNIQUE(poll_id, ip_address)` constraint. If a user tries to vote again from the same IP, the database rejects it, and the API returns a 403 error. This prevents users from spamming votes via automated scripts or simply refreshing.
+2. **Client-Side Storage (UX Level):** Once a successful vote is cast, `localStorage.setItem('voted_{poll_id}', 'true')` is triggered. The UI reads this and immediately disables the voting buttons, showing the user the real-time results instead. This prevents accidental double-clicks and provides immediate UI feedback.
 
-First, run the development server:
+## Edge Cases Handled
+- **Empty Options:** The poll creation form filters out any options left completely blank before sending them to the database.
+- **Division by Zero:** When calculating the percentage of votes for the real-time UI bars, the math logic includes a check (`totalVotes > 0 ? ... : 0`) to prevent `NaN` errors when the poll is brand new with 0 votes.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Known Limitations & Future Improvements
+- **IP Tracking Limits:** If multiple legitimate users are behind a shared NAT/Router (like a corporate office or school network), they will share the same IP address. The first person will vote successfully, but subsequent users will be blocked. A future improvement would be implementing proper user authentication (e.g., Google OAuth) or more sophisticated browser fingerprinting.
